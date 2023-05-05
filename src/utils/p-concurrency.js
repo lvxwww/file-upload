@@ -1,15 +1,8 @@
 /*
- * @LastEditors: lvxw lv81567395@vip.qq.com
- * @LastEditTime: 2023-04-26 21:23:23
+ * @LastEditors: lvxianwen
+ * @LastEditTime: 2023-05-05 16:09:56
  */
-import {
-  GOOD_UPDATE,
-  BAD_STATUS,
-  EVENT_PROGRESS,
-  EVENT_FILE_STATUS,
-  RUN_STATUS,
-  PAUSE_STATUS,
-} from "./status.js";
+import { BAD_STATUS, EVENT_PROGRESS, EVENT_FILE_STATUS, RUN_STATUS, PAUSE_STATUS } from "./status.js";
 //实现并发控制，且可以自由追加，需做的异步任务
 // 并发数
 const CONCURRENCY = 6;
@@ -24,6 +17,7 @@ let EE = "";
 // 是否正在执行
 let isRunning = false;
 
+//将任务加入工作池
 function add_task_to_pool(taskItem) {
   const { file_hash, fn: task, RetryCount } = taskItem || {};
   request_pool.push(task);
@@ -61,15 +55,14 @@ function add_task_to_pool(taskItem) {
     });
 }
 
+//开始任务
 function start_task() {
-  console.time("计时开始");
   if (isRunning) return;
   while (request_pool.length < CONCURRENCY && task_list.length > 0) {
     add_task_to_pool(task_list.shift());
     isRunning = true;
   }
   isRunning = false;
-  console.timeEnd("计时开始");
 }
 
 //增加新任务
@@ -91,7 +84,6 @@ function pause_task(file_hash) {
 
   task_list = new_task_list;
   pause_list = pause_list.concat(new_pause_list);
-  console.log("pause_task", pause_list, new_task_list, file_hash);
   notifyUpdateFileList(file_hash, PAUSE_STATUS);
 }
 
@@ -114,15 +106,6 @@ function regain_task(file_hash) {
 //取消任务
 function cancel_task() {
   task_list = [];
-}
-
-//将请求中的任务也取消了
-function canel_request(file_hash) {
-  request_pool.forEach((_item) => {
-    if (_item["hash_name"] === file_hash) {
-      _item?.abort();
-    }
-  });
 }
 
 //通知更新进度条

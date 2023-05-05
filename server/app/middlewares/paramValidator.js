@@ -1,11 +1,11 @@
 /*
  * @LastEditors: lvxianwen
- * @LastEditTime: 2023-04-13 17:34:58
+ * @LastEditTime: 2023-05-05 16:11:21
  */
 module.exports = (paramSchema) => {
   return async function (ctx, next) {
     let body = ctx.request.body;
-    // 是否出现错误的标记
+
     let is_error = false;
     const paramMap = {
       router: ctx.request.params,

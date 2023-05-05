@@ -1,34 +1,27 @@
 /*
  * @Author: lvxw lv81567395@vip.qq.com
  * @Date: 2023-04-03 22:32:22
- * @LastEditors: lvxw lv81567395@vip.qq.com
- * @LastEditTime: 2023-04-26 21:23:13
+ * @LastEditors: lvxianwen
+ * @LastEditTime: 2023-05-05 16:06:18
  * @FilePath: /file-uploader-client/src/components/Upload/index.jsx
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import EvemtEmitter3 from "eventemitter3";
 import api from "../../api/upload";
 
 import {
-  upload,
   calculateHash,
   checkChunk,
   setChunkRequest,
 } from "../../utils/upload";
 import {
-  pause_task,
-  regain_task,
-  cancel_task,
   setEvemtEmitter,
 } from "../../utils/p-concurrency";
 import ProgressItem from "../ProgressItem/index";
 import {
   START_STATUS,
-  PAUSE_STATUS,
   RUN_STATUS,
-  GOOD_UPDATE,
-  BAD_STATUS,
   FINISH_STATUS,
   EVENT_PROGRESS,
   EVENT_FILE_STATUS,
@@ -37,8 +30,10 @@ import "./index.less";
 
 const EE = new EvemtEmitter3();
 
-//文件大小限制
-const FILE_SIZE = 1024 * 1024 * 5;
+//关键key
+const FILE_STATUS = "file_status",
+      PERCENTAGE  = "percentage",
+      FINISH_CHUNK_NUM = "finish_chunk_num";
 
 export default function index() {
   // 当前的文件列表
@@ -47,6 +42,7 @@ export default function index() {
   const [curFile, setCurFile] = useState(null);
 
   //设置event事件
+  // 用于更新文件列表状态和进度
   useEffect(() => {
     setEvemtEmitter(EE);
     EE.on(EVENT_PROGRESS, handleUpdate);
@@ -58,6 +54,7 @@ export default function index() {
   }, [fileList]);
 
   //监听文件列表的更新
+  // 开启新的文件上传
   useEffect(() => {
     if (curFile) {
       const { file_hash, file_name, chunkList } = curFile;
@@ -66,10 +63,10 @@ export default function index() {
     }
   }, [curFile]);
 
-  //增加文件上传中的提示弹窗
+  // 增加文件上传中的挽留提示弹窗
   useEffect(() => {
     //只有文件列表中文件状态不是完成态，则监听beforeunload
-    if (fileList.some((item) => file_status !== FINISH_STATUS)) {
+    if (fileList.some((item) => item[FILE_STATUS] !== FINISH_STATUS)) {
       window.addEventListener("beforeunload", handleUnload);
     }
 
@@ -78,11 +75,53 @@ export default function index() {
     };
   }, [fileList]);
 
+  //检查切片
+  const handleCheckChunk = async (file_hash, file_name, chunkList) => {
+    const check_res = await checkChunk(file_hash, file_name, chunkList);
+    const { is_complete_file, new_chunkList } = check_res;
+    if (is_complete_file) {
+      //文件已经上传完毕
+      updateProgress(file_hash, true);
+    } else {
+      //开始上传
+      startUpload(new_chunkList, file_hash);
+    }
+  };
+
+  //开始上传切片
+  const startUpload = (chunkList, file_hash) => {
+    //更新文件的列表状态
+    updateFileListStatus(file_hash);
+    // 更新文件列表的chunkList
+    updateFileListChunk(chunkList, file_hash);
+    //开始上传
+    setChunkRequest(chunkList, file_hash);
+  };
+
+  //更新文件上传列表的chunkList (通过checkHash接口后，确定的chunk)
+  const updateFileListChunk = (new_chunkList, file_hash) => {
+    const target_Index = fileList.findIndex(
+      (_item) => _item.file_hash === file_hash
+    );
+    if (target_Index !== -1) {
+      fileList[target_Index]["chunkList"] = [...new_chunkList];
+      fileList[target_Index][FINISH_CHUNK_NUM] =
+        fileList[target_Index]["all_chunk_num"] - new_chunkList.length;
+      setFileList([...fileList]);
+      //处理秒传
+      if (new_chunkList.length === 0) {
+        updateProgress(file_hash, true);
+      }
+    }
+  };
+
+  //更新进度
   const handleUpdate = (e) => {
     const { file_hash } = e;
     updateProgress(file_hash);
   };
 
+  //更新上传状态
   const handleStatus = (e) => {
     const { file_hash, type } = e;
     console.log("触发了更新状态", file_hash);
@@ -125,18 +164,7 @@ export default function index() {
     setCurFile({ ...file_item_obj });
   };
 
-  //检查切片
-  const handleCheckChunk = async (file_hash, file_name, chunkList) => {
-    const check_res = await checkChunk(file_hash, file_name, chunkList);
-    const { is_complete_file, new_chunkList } = check_res;
-    if (is_complete_file) {
-      //文件已经上传完毕
-      updateProgress(file_hash, true);
-    } else {
-      //开始上传
-      startUpload(new_chunkList, file_hash);
-    }
-  };
+
 
   //更新进度条
   const updateProgress = async (file_hash = "", is_complete_file = false) => {
@@ -150,24 +178,24 @@ export default function index() {
       const { all_chunk_num, file_status } = fileList[target_Index];
       const new_finish_chunk_num = is_complete_file
         ? all_chunk_num
-        : ++fileList[target_Index]["finish_chunk_num"];
+        : ++fileList[target_Index][FINISH_CHUNK_NUM];
       //只有文件的上传进行状态才更新，进度条
       if (file_status === RUN_STATUS || file_status === START_STATUS) {
-        fileList[target_Index]["percentage"] = parseInt(
+        fileList[target_Index][PERCENTAGE] = parseInt(
           (new_finish_chunk_num / all_chunk_num) * 100
         );
-        if (+fileList[target_Index]["percentage"] === 100) {
+        if (+fileList[target_Index][PERCENTAGE] === 100) {
           const { file_name, file_hash } = fileList[target_Index];
 
           //已经有完整文件的
           if (is_complete_file) {
-            fileList[target_Index]["file_status"] = FINISH_STATUS;
+            fileList[target_Index][FILE_STATUS] = FINISH_STATUS;
           } else {
             console.log("合并切片请求", file_hash);
             //触发合并切片请求
             const res = await merge(file_name, file_hash);
             if (+res.code === 0) {
-              fileList[target_Index]["file_status"] = FINISH_STATUS;
+              fileList[target_Index][FILE_STATUS] = FINISH_STATUS;
             }
           }
         }
@@ -183,26 +211,9 @@ export default function index() {
     );
 
     if (target_Index !== -1) {
-      if (fileList[target_Index]["file_status"] !== file_status) {
-        fileList[target_Index]["file_status"] = file_status;
+      if (fileList[target_Index][FILE_STATUS] !== file_status) {
+        fileList[target_Index][FILE_STATUS] = file_status;
         setFileList([...fileList]);
-      }
-    }
-  };
-
-  //更新文件上传列表的chunkList
-  const updateFileListChunk = (new_chunkList, file_hash) => {
-    const target_Index = fileList.findIndex(
-      (_item) => _item.file_hash === file_hash
-    );
-    if (target_Index !== -1) {
-      fileList[target_Index]["chunkList"] = [...new_chunkList];
-      fileList[target_Index]["finish_chunk_num"] =
-        fileList[target_Index]["all_chunk_num"] - new_chunkList.length;
-      setFileList([...fileList]);
-      //处理秒传
-      if (new_chunkList.length === 0) {
-        updateProgress(file_hash, true);
       }
     }
   };
@@ -225,17 +236,7 @@ export default function index() {
     });
   };
 
-  //开始上传切片
-  const startUpload = (chunkList, file_hash) => {
-    //更新文件的列表状态
-    updateFileListStatus(file_hash);
-    // 更新文件列表的chunkList
-    updateFileListChunk(chunkList, file_hash);
-    //开始上传
-    setChunkRequest(chunkList, file_hash);
-  };
-
-  //处理页面unload
+  //处理页面unload，挽留提示弹窗
   const handleUnload = (e) => {
     const tips = "可能不会保存您所做的更改!!";
     e.preventDefault();

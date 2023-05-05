@@ -1,29 +1,18 @@
 /*
- * @LastEditors: lvxw lv81567395@vip.qq.com
- * @LastEditTime: 2023-04-22 21:55:08
+ * @LastEditors: lvxianwen
+ * @LastEditTime: 2023-05-05 15:58:23
  */
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   START_STATUS,
   PAUSE_STATUS,
   RUN_STATUS,
-  GOOD_UPDATE,
   FINISH_STATUS,
   BAD_STATUS,
 } from "../../utils/status.js";
 import { pause_task, regain_task } from "../../utils/p-concurrency.js";
 
 const Index = ({ file_name = "", file_hash = "", file_status, percentage }) => {
-  const [percentageW, setW] = useState(0);
-  // 进度条的提升信息
-  const [msg, setMsg] = useState(checkstatus(file_status));
-
-  useEffect(() => {
-    //上传完成
-    if (+percentage === 100) {
-      setMsg(checkstatus(FINISH_STATUS));
-    }
-  }, [percentage]);
 
   //处理状态文字显示
   function checkstatus(status) {

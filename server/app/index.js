@@ -1,6 +1,6 @@
 /*
- * @LastEditors: lvxw lv81567395@vip.qq.com
- * @LastEditTime: 2023-04-22 20:50:32
+ * @LastEditors: lvxianwen
+ * @LastEditTime: 2023-05-05 16:26:01
  */
 const Koa = require("koa");
 const Router = require("koa-router");
@@ -18,12 +18,9 @@ const app = new Koa();
 
 app.use(compose(MD));
 
-// app.use(async (ctx, next) => {
-//   ctx.set("Access-Control-Allow-Origin", "*");
-//   ctx.set("Access-Control-Allow-Headers", "Content-Type");
-//   ctx.set("Access-Control-Allow-Methods", "OPTIONS, GET, PUT, POST, DELETE");
-//   await next();
-// });
+app.use((ctx) => {
+  ctx.body = "Welcome file-upload-server !!";
+});
 
 app.listen(port, () => {
   console.log(`应用已经启动，http://localhost:${port}`);

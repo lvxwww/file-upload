@@ -1,6 +1,6 @@
 /*
  * @LastEditors: lvxianwen
- * @LastEditTime: 2023-04-12 14:39:07
+ * @LastEditTime: 2023-05-05 16:10:37
  */
 const formidable = require("formidable");
 
@@ -10,7 +10,6 @@ module.exports = () => {
       multiples: true,
     });
 
-    // eslint-disable-next-line promise/param-names
     await new Promise((reslove, reject) => {
       form.parse(ctx.req, (err, fields, files) => {
         if (err) {
