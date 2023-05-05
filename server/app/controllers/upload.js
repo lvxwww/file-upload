@@ -1,6 +1,6 @@
 /*
  * @LastEditors: lvxw lv81567395@vip.qq.com
- * @LastEditTime: 2023-04-25 22:43:26
+ * @LastEditTime: 2023-05-05 23:15:07
  */
 const fs = require("fs");
 const path = require("path");
@@ -52,10 +52,6 @@ const getPath = (file_hash, type, extName = "") => {
 async function checkHash(ctx) {
   const { file_hash, file_name } = ctx.query;
   const extName = path.parse(file_name).ext;
-  // 校验下参数
-  // ctx.verifyParams({
-  //   file_hash: { type: "string", required: true },
-  // });
   //检查步骤
   // 1.检查，是否在 'app/public/upload/complete_file' 有相同hash的文件, 有则返回 当前文件已存在 ，无则往下
   // 2.检查，是否在 'app/public/upload/file_chunk' 有相同hash的文件切片, 有则返回 当前文件切片的序号数组，无则往下
@@ -183,9 +179,9 @@ async function mergeFileChunk(file_path, finish_path) {
       );
     })
   );
-  await delay(5000);
-  // //删除切片的暂时目录
-  // fs.rmdirSync(file_path);
+  await delay(10000);
+  //删除切片的暂时目录
+  fs.rmdirSync(file_path);
 }
 
 // 写入文件流

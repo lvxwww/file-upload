@@ -1,8 +1,8 @@
 /*
  * @Author: lvxw lv81567395@vip.qq.com
  * @Date: 2023-04-03 22:32:22
- * @LastEditors: lvxianwen
- * @LastEditTime: 2023-05-05 16:06:18
+ * @LastEditors: lvxw lv81567395@vip.qq.com
+ * @LastEditTime: 2023-05-05 22:55:30
  * @FilePath: /file-uploader-client/src/components/Upload/index.jsx
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -10,14 +10,8 @@ import React, { useState, useEffect } from "react";
 import EvemtEmitter3 from "eventemitter3";
 import api from "../../api/upload";
 
-import {
-  calculateHash,
-  checkChunk,
-  setChunkRequest,
-} from "../../utils/upload";
-import {
-  setEvemtEmitter,
-} from "../../utils/p-concurrency";
+import { calculateHash, checkChunk, setChunkRequest } from "../../utils/upload";
+import { setEvemtEmitter } from "../../utils/p-concurrency";
 import ProgressItem from "../ProgressItem/index";
 import {
   START_STATUS,
@@ -32,8 +26,8 @@ const EE = new EvemtEmitter3();
 
 //关键key
 const FILE_STATUS = "file_status",
-      PERCENTAGE  = "percentage",
-      FINISH_CHUNK_NUM = "finish_chunk_num";
+  PERCENTAGE = "percentage",
+  FINISH_CHUNK_NUM = "finish_chunk_num";
 
 export default function index() {
   // 当前的文件列表
@@ -130,9 +124,9 @@ export default function index() {
 
   //处理文件上传
   // 步骤
-  //   1.先创建文件列表
-  //   2.再检查已经上传的切片
-  //   3.开始上传切片或文件秒传
+  // 1.先创建文件列表
+  // 2.再检查已经上传的切片
+  // 3.开始上传切片或文件秒传
   const handleUpload = async (e) => {
     for (let file of e.target.files) {
       // 获取hash,先创建文件列表
@@ -163,8 +157,6 @@ export default function index() {
     });
     setCurFile({ ...file_item_obj });
   };
-
-
 
   //更新进度条
   const updateProgress = async (file_hash = "", is_complete_file = false) => {
